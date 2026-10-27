@@ -1,0 +1,50 @@
+// ADD USER TO SYSTEM DOCKER
+sudo groupadd -f docker
+sudo usermod -aG docker $USER
+newgrp docker
+
+// REBOOT ...
+
+// FIRST ENABLE CONTAINERS
+docker compose start localstack kafka sqlserver
+// CREATE QUEUE
+docker compose exec localstack awslocal sqs create-queue \
+        --queue-name financial-operations
+
+// AWS SQS
+
+// ENVIA FICTICIO PARA FILA
+docker compose exec localstack awslocal sqs send-message \
+    --queue-url http://localhost:4566/000000000000/financial-operations \
+    --message-body '{"orderId":2001,"customer":"Teste LocalStack"}'
+
+// CHECK SE A FILA EXISTE
+docker compose exec localstack awslocal sqs get-queue-url \
+    --queue-name financial-operations
+
+// CREATE UMA FILA
+docker compose exec localstack awslocal sqs create-queue \
+    --queue-name financial-operations
+
+// ENTRA NO SQL SERVER DB
+
+// PASSWORD: _SooahPazRR22
+docker run -it --rm --network app_default mcr.microsoft.com/mssql-tools \
+          /opt/mssql-tools/bin/sqlcmd \
+          -S tcp:app-sqlserver-1,1433 \
+          -U sa \
+          -C
+
+// DOCKER
+
+// CONSTRUA A IMAGEM
+docker compose up -d localstack kafka sqlserver
+
+
+// APP
+
+// COMPILE 
+docker compose up -d --build app
+
+// TAMBEM PRA CONTRUIR A IMAGEM JUNTO AO DOCKER
+docker compose build app
